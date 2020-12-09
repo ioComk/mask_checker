@@ -125,7 +125,7 @@ if __name__ == "__main__":
 
     # Loss関数と最適化法の定義
     criterion = nn.CrossEntropyLoss().to(device)
-    optimizer = t.optim.SGD(model.classifier.parameters(), LEARNING_RATE)
+    optimizer = t.optim.SGD(model.parameters(), LEARNING_RATE)
 
     early_stopping = EarlyStopping(PATIENCE, verbose=False)
 
