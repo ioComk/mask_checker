@@ -1,64 +1,60 @@
-import torch as t
+import numpy as np
 from torch import nn
-from torch.nn.modules.activation import ReLU
+
+KERNEL_SIZE = 3
+STRIDE = 2
+padding = 0
+dilation = 1
 
 class Net(nn.Module):
 
-    def __init__(self):
+    def __init__(self, in_c, h, w, mid_c, out_c, hidden_units, out_units, dropout=0):
         super(Net, self).__init__()
 
-        self.act = nn.ReLU()
+        p = dropout
 
-        self.conv1 = nn.Sequential(
-            nn.Conv2d(3, 16, kernel_size=3, stride=2),
-            nn.Conv2d(16, 32, kernel_size=3, stride=2),
+        h_out1, w_out1 = self.calc_cnn_shape(h, w, padding, dilation, KERNEL_SIZE, STRIDE)
+        h_out2, w_out2 = self.calc_cnn_shape(h_out1, w_out1, padding, dilation, KERNEL_SIZE, STRIDE)
+        h_out3, w_out3 = self.calc_cnn_shape(h_out2, w_out2, padding, dilation, KERNEL_SIZE, STRIDE)
+        h_out4, w_out4 = self.calc_cnn_shape(h_out3, w_out3, padding, dilation, KERNEL_SIZE, STRIDE)
+
+        in_unit = out_c*h_out4*w_out4
+
+        self.conv = nn.Sequential(
+            nn.Conv2d(in_c, mid_c, kernel_size=KERNEL_SIZE, stride=STRIDE, padding=padding, dilation=dilation),
             nn.ReLU(),
-            nn.MaxPool2d(kernel_size=3)
-        )
-
-        self.conv2 = nn.Sequential(
-            nn.Conv2d(32, 64, kernel_size=2, stride=1),
+            nn.MaxPool2d(kernel_size=KERNEL_SIZE, stride=STRIDE, padding=padding, dilation=dilation),
+            nn.Conv2d(mid_c, out_c, kernel_size=KERNEL_SIZE, stride=STRIDE, padding=padding, dilation=dilation),
             nn.ReLU(),
-            nn.MaxPool2d(kernel_size=3)
+            nn.MaxPool2d(kernel_size=KERNEL_SIZE, stride=STRIDE, padding=padding, dilation=dilation)
         )
 
-        # self.conv3 = nn.Sequential(
-        #     nn.Conv2d(16, 32, kernel_size=3, stride=1),
-        #     nn.ReLU(),
-        #     nn.MaxPool2d(kernel_size=2)
-        # )
-
-        self.l1 = nn.Sequential(
-            nn.Linear(1600,512),
-            nn.Dropout(p=0.5),
-            nn.ReLU()
-        )
-
-        # self.l2 = nn.Sequential(
-        #     nn.Linear(4096, 4096),
-        #     nn.Dropout(p=0.5),
-        #     nn.ReLU()
-        # )
-
-        self.out = nn.Sequential(
-            nn.Linear(512, 2),
+        self.dense = nn.Sequential(
+            nn.Linear(in_unit, hidden_units),
+            nn.Dropout(p),
+            nn.ReLU(),
+            nn.Linear(hidden_units, out_units),
+            nn.Dropout(p),
+            nn.ReLU(),
+            nn.Linear(out_units, 2),
             nn.Softmax(dim=1),
         )
 
     def forward(self, input):
 
-        x = self.conv1(input)       
-        x = self.conv2(x)
-        # x = self.conv3(x)
-
+        x = self.conv(input)
         x = self.flatten(x)
-
-        x = self.l1(x)
-        # x = self.l2(x)
-        y = self.out(x)
+        y = self.dense(x)
 
         return y
 
     def flatten(self, x):
         bs = x.size()[0]
         return x.view(bs, -1)
+    
+    def calc_cnn_shape(self, h_in, w_in, padding, dilation, kernel_size, stride):
+
+        h_out = int(np.floor(((h_in+(2*padding)-(dilation*(kernel_size-1))-1) / stride) + 1))
+        w_out = int(np.floor(((w_in+(2*padding)-(dilation*(kernel_size-1))-1) / stride) + 1))
+
+        return h_out, w_out
