@@ -7,11 +7,12 @@ import torchvision.transforms as transforms
 from torchvision.datasets import ImageFolder
 from earlystopping import EarlyStopping
 from net import Net
+import uuid
+import optuna
 
+# Constant value -----
 MAX_EPOCH = 1000
 PATIENCE  = 20
-BATCH_SIZE   = 32
-LEARNING_RATE = 0.0001
 
 # Training
 def train_step(epochs, data_loader, model, optimizer):
@@ -22,8 +23,6 @@ def train_step(epochs, data_loader, model, optimizer):
     model.train()
 
     for i, (input, label) in enumerate(data_loader) :
-
-        input.requires_grad_()
 
         input = input.to(device)
         label = label.to(device).long()
@@ -46,7 +45,7 @@ def train_step(epochs, data_loader, model, optimizer):
             running_loss = 0
 
 # Validation
-def val_step(model, data_loader, out_dir=None):
+def val_step(model, data_loader, early_stopping):
 
     running_loss = 0.0
     correct = 0
@@ -75,11 +74,61 @@ def val_step(model, data_loader, out_dir=None):
         print('correct: {:d}  total: {:d}'.format(correct, total))
         print('accuracy = {:f}'.format(correct / total))
 
-        early_stopping(1 - (correct/total), model, out_dir)
+        early_stopping(1-(correct/total), model)
         print('------------------------------------------')
-        print('Validation loss: %f' %(running_loss/itr))
+        # print('Validation loss: %f' %(running_loss/itr))
+
+        # Accを返す
+        return correct/total
+
+def objective(trial):
+
+    uuid_ = str(uuid.uuid4())
+    out_dir = 'output/'+uuid_
+    os.makedirs(out_dir)
+
+    trial.set_user_attr('uuid', uuid_)
+
+    # ハイパーパラメータ
+    batch_size = trial.suggest_int('batch_size', 128, 512)
+    dropout    = trial.suggest_float('dropout', 0.1, 0.5)
+    lr         = trial.suggest_float('lr', 1e-5, 1e-2)
+
+    # devフォルダにある画像を取り込み
+    train_datasets = ImageFolder(root='dataset/dev/train', transform=data_transform['train'])
+    val_datasets   = ImageFolder(root='dataset/dev/val',   transform=data_transform['val'])
+
+    # DataLoader作成
+    train_dataloader = DataLoader(train_datasets, batch_size=batch_size, shuffle=True, num_workers=4)
+    val_dataloader   = DataLoader(val_datasets,   batch_size=batch_size, shuffle=False, num_workers=4)
+
+    model = Net().to(device)
+
+    optimizer = t.optim.SGD(model.parameters(), lr)
+    early_stopping = EarlyStopping(PATIENCE, verbose=True, out_dir=out_dir)
+
+    # DNN training -------------------------------------------------------
+    for epoch in range(MAX_EPOCH+1):
+
+        train_step(epoch, train_dataloader, model, optimizer)
+        acc = val_step(model, val_dataloader, early_stopping)
+
+        trial.report(acc, epoch+1)
+
+        # Earlystopping
+        if early_stopping.early_stop:
+            print('Early stopping.')
+            break
+        
+        # Pruner
+        if trial.should_prune():
+            raise optuna.exceptions.TrialPruned()
+    # --------------------------------------------------------------------
 
 if __name__ == "__main__":
+
+    device = t.device('cuda' if t.cuda.is_available() else 'cpu')  # CUDA or CPU
+    print('Device :', device)
 
     # Transforms
     data_transform = {
@@ -97,44 +146,19 @@ if __name__ == "__main__":
                                       [0.229, 0.224, 0.225]),
                  ]),
     }
-    
-    # devフォルダにある画像を取り込み
-    train_datasets = ImageFolder(root='dataset/dev/train', transform=data_transform['train'])
-    val_datasets   = ImageFolder(root='dataset/dev/val',   transform=data_transform['val'])
-
-    # DataLoader作成
-    train_dataloader = DataLoader(train_datasets, batch_size=BATCH_SIZE, shuffle=True )
-    val_dataloader   = DataLoader(val_datasets,   batch_size=BATCH_SIZE, shuffle=False)
-
-    device = t.device('cuda' if t.cuda.is_available() else 'cpu')  # CUDA or CPU
-    print('Device :', device)
-
-    # 結果を出力するフォルダ
-    out_dir = 'output/'+date.today().strftime('%Y%m%d')
-
-    # モデル保存用フォルダ作成（YYYYMMDD_ID）
-    for i in range(1, 100):
-        _out_dir = out_dir+'_'+str(i).rjust(2,'0')
-        tmp = os.path.isdir(_out_dir)
-        if not os.path.isdir(_out_dir):
-            os.makedirs(out_dir+'_'+str(i).rjust(2,'0'))
-            out_dir = _out_dir
-            break
-    
-    model = Net().to(device)
 
     # Loss関数と最適化法の定義
     criterion = nn.CrossEntropyLoss().to(device)
-    optimizer = t.optim.SGD(model.parameters(), LEARNING_RATE)
 
-    early_stopping = EarlyStopping(PATIENCE, verbose=False)
+    # 枝刈り手法
+    pruner = optuna.pruners.SuccessiveHalvingPruner(
+        min_resource=1,
+        reduction_factor=4,
+        min_early_stopping_rate=0
+    )
 
-    #####################    DNN Training     #########################
-    for epoch in range(MAX_EPOCH+1):
+    study = optuna.create_study(direction='maximize', pruner=pruner)
+    study.optimize(objective, n_trials=100)
 
-        train_step(epoch, train_dataloader, model, optimizer)
-        val_step(model, val_dataloader, out_dir=out_dir)
-
-        if early_stopping.early_stop:
-            print('Early stopping.')
-            break
+    study_df = study.trials_dataframe()
+    study_df.to_csv("result.csv")
