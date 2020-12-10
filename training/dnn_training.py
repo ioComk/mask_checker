@@ -75,7 +75,7 @@ def val_step(model, data_loader, early_stopping):
         print('correct: {:d}  total: {:d}'.format(correct, total))
         print('accuracy = {:f}'.format(correct / total))
 
-        early_stopping(correct/total, model)
+        early_stopping(running_loss/itr, model)
         print('------------------------------------------')
         # print('Validation loss: %f' %(running_loss/itr))
 
@@ -113,7 +113,7 @@ def objective(trial):
     model = Net(in_c, h, w, mid_c, out_c, hidden_units, out_units, dropout).to(device)
 
     optimizer = t.optim.SGD(model.parameters(), lr)
-    early_stopping = EarlyStopping(PATIENCE, verbose=True, out_dir=out_dir, key='max')
+    early_stopping = EarlyStopping(PATIENCE, verbose=True, out_dir=out_dir, key='min')
 
     acc = 0
 
