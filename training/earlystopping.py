@@ -28,7 +28,7 @@ import os
 
 class EarlyStopping:
     """Early stops the training if validation loss doesn't improve after a given patience."""
-    def __init__(self, patience=7, verbose=False, delta=0):
+    def __init__(self, patience=7, verbose=False, delta=0, out_dir=None):
         """
         Args:
             patience (int): How long to wait after last time validation loss improved.
@@ -45,14 +45,15 @@ class EarlyStopping:
         self.early_stop = False
         self.val_loss_min = np.Inf
         self.delta = delta
+        self.out_dir = out_dir
 
-    def __call__(self, val_loss, model,param):
+    def __call__(self, val_loss, model):
 
         score = -val_loss
 
         if self.best_score is None:
             self.best_score = score
-            self.save_checkpoint(val_loss, model, param)
+            self.save_checkpoint(val_loss, model)
         elif score < self.best_score - self.delta:
             self.counter += 1
             print(f'EarlyStopping counter: {self.counter} out of {self.patience}')
@@ -60,13 +61,13 @@ class EarlyStopping:
                 self.early_stop = True
         else:
             self.best_score = score
-            self.save_checkpoint(val_loss, model, param)
+            self.save_checkpoint(val_loss, model)
             self.counter = 0
 
-    def save_checkpoint(self, val_loss, model, out_dir=None):
+    def save_checkpoint(self, val_loss, model):
         '''Saves model when validation loss decrease.'''
         if self.verbose:
             print(f'Validation loss decreased ({self.val_loss_min:.6f} --> {val_loss:.6f}).  Saving model ...')
-        if out_dir is not None:
-            torch.save(model.state_dict(), os.path.join(out_dir, 'model.pth'))
+        if self.out_dir is not None:
+            torch.save(model.state_dict(), os.path.join(self.out_dir, 'model.pth'))
         self.val_loss_min = val_loss
