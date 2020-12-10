@@ -90,8 +90,6 @@ def objective(trial):
 
     trial.set_user_attr('uuid', uuid_)
 
-    out_units = 2
-
     # ハイパーパラメータ
     batch_size   = trial.suggest_int('batch_size', 32, 512)
     dropout      = trial.suggest_float('dropout', 0.1, 0.5)
