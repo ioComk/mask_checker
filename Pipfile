@@ -7,6 +7,7 @@ name = "pypi"
 numpy = "<=1.18"
 optuna = "*"
 pandas = "*"
+matplotlib = "*"
 
 [dev-packages]
 
