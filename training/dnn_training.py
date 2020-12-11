@@ -1,7 +1,10 @@
 import os
+import numpy as np
+import matplotlib.pyplot as plt
 import torch as t
 from torch import nn
 from torch.utils.data import DataLoader
+import torchvision
 import torchvision.transforms as transforms
 from torchvision.datasets import ImageFolder
 import uuid
@@ -82,6 +85,22 @@ def val_step(model, data_loader, early_stopping):
         # Accを返す
         return correct/total
 
+def confirm_data(dataloader, size_num):
+
+    classes = ('with_mask', 'without_mask')
+    images, labels = next(iter(dataloader))
+
+    # 画像の表示
+    img = torchvision.utils.make_grid(images[0:size_num, :, :])
+
+    img = img / 2 + 0.5     
+    npimg = img.numpy()
+    plt.imshow(np.transpose(npimg, (1, 2, 0)))
+    plt.savefig('images.png')
+
+    # ラベルの表示
+    print(' '.join('%5s' % classes[labels[j]] for j in range(size_num)))
+
 def objective(trial):
 
     uuid_ = str(uuid.uuid4())
@@ -106,6 +125,8 @@ def objective(trial):
     # DataLoader作成
     train_dataloader = DataLoader(train_datasets, batch_size=batch_size, shuffle=True, num_workers=4)
     val_dataloader   = DataLoader(val_datasets,   batch_size=batch_size, shuffle=False, num_workers=4)
+
+    # confirm_data(train_dataloader, 4)
 
     # データサイズを取得
     in_c, h, w = train_datasets[0][0].shape
