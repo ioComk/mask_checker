@@ -8,6 +8,10 @@ numpy = "<=1.18"
 optuna = "*"
 pandas = "*"
 matplotlib = "*"
+gspread = "*"
+oauth2client = "*"
+pyzbar = "*"
+opencv-python = "*"
 
 [dev-packages]
 
