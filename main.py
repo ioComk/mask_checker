@@ -8,27 +8,55 @@ import gspread
 import json
 from oauth2client.service_account import ServiceAccountCredentials 
 from training.net import Net
+from datetime import datetime
 
 '''
     Doc:
+
+    # -------------------------------------
+    # OpenCV ------------------------------
+    # -------------------------------------
+
+    # 文字を表示
     cv2.putText(c_frame, TEXT, (X, Y), cv.FONT_HERSHEY_PLAIN, FONT_SIZE, COLOR, THICKNESS, cv.LINE_AA)
+
+    # -------------------------------------
+    # スプレッドシート ---------------------
+    # -------------------------------------
+
+    # セルの値を受け取る
+    worksheet.acell('CELL').value
+
+    # 値をセットする
+    worksheet.update_cell(ROW, COL, VALUE)
+
+    # 列の値を全て受け取る
+    worksheet.col_values(1~)
+
+    # -------------------------------------
 '''
-def rw_ssheet():
-    '''
-        セルの値を受け取る
-        worksheet.acell('CELL').value
-        worksheet.update_cell(ROW, COL, VALUE)
-    '''
 
-    #共有設定したスプレッドシートのシート1を開く
-    worksheet = gc.open_by_key(SPREADSHEET_KEY).sheet1
+def check_deplicated(id):
+    row = 0
+    deplicated = False
 
-    #A1セルの値を受け取る
-    import_value = int(worksheet.acell('A1').value)
+    for i in range(len(ids)):
+        if ids[i] == id:
+            if dates[i] == today:
+                print(f'{ids[i]} is measured already.')
+                deplicated = True
+    
+    row = len(dates)+1 if deplicated is False else 0
 
-    #A1セルの値に100加算した値をB1セルに表示させる
-    export_value = import_value+100
-    worksheet.update_cell(1,2, export_value)
+    return row
+
+def write_ss(row, id):
+    # 値をセットする
+    worksheet.update_cell(row, 1, today)
+    worksheet.update_cell(row, 2, id)
+
+    dates.append(today)
+    ids.append(id)
 
 def main():
 
@@ -71,7 +99,9 @@ def main():
         if qr:
             id = qr[0].data.decode('utf-8')
             cv2.putText(c_frame, id, (60, 40), cv2.FONT_HERSHEY_SIMPLEX, 1.0, WHITE, 2, cv2.LINE_AA)
-
+            row = check_deplicated(id)
+            if row != 0:
+                write_ss(row, id)
 
         # 画像の取得と顔の検出
         img = c_frame
@@ -100,8 +130,6 @@ def main():
 
                 face = img_copy[startY-margin_x:endY+margin_y, startX-margin_x:endX+margin_x]
 
-                # cv2.imshow('face', face)
-
                 predicted = 0
 
                 if face.shape[0]*face.shape[1]*face.shape[2] != 0:
@@ -114,9 +142,7 @@ def main():
 
                     _, predicted = t.max(output.data, 1)
 
-                # cv2.rectangle(img_copy, (startX, startY), (endX, endY), (0, 255*predicted, 255*(not predicted)), thickness=2)
-
-                if predicted == 0:
+                if predicted == 1:
                     cv2.rectangle(img_copy, (startX, startY), (endX, endY), RED, thickness=2)
                 else:
                     cv2.rectangle(img_copy, (startX, startY), (endX, endY), GREEN, thickness=2)
@@ -151,6 +177,9 @@ if __name__ == "__main__":
 
     #共有設定したスプレッドシートキーを変数[SPREADSHEET_KEY]に格納する。
     SPREADSHEET_KEY = '1rm6spOIOGCce5aczzygqzaePFuHw2EAi8F1XM1jxnHI'
+
+    #共有設定したスプレッドシートのシート1を開く
+    worksheet = gc.open_by_key(SPREADSHEET_KEY).sheet1
     # -------------------------------------------------------------------------------------------------
 
     # DNN conditions ----------------------------------------------------------------------------------
@@ -180,5 +209,12 @@ if __name__ == "__main__":
     HIDDEN_UNITS = 2929
     OUT_UNITS = 228
     # -------------------------------------------------------------------------------------------------
+
+    today = datetime.now()
+    today = today.strftime('%Y/%m/%d')
+
+    # 日付とIDを取得
+    dates = worksheet.col_values(1)
+    ids  = worksheet.col_values(2)
 
     main()
