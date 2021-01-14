@@ -10,6 +10,7 @@ from torchvision.datasets import ImageFolder
 import uuid
 import optuna
 import pandas
+import slackweb
 
 from earlystopping import EarlyStopping
 from net import Net
@@ -118,15 +119,23 @@ def objective(trial):
     hidden_units = trial.suggest_int('hidden_units', 1024, 4096)
     out_units    = trial.suggest_int('out_units', 128, 256)
 
+    print(f'batch size:{batch_size}')
+    print(f'dropout:{dropout}')
+    print(f'lr:{lr}')
+    print(f'mid_c:{mid_c}')
+    print(f'out_c:{out_c}')
+    print(f'hidden units:{hidden_units}')
+    print(f'out units:{out_units}')
+
     # devフォルダにある画像を取り込み
-    train_datasets = ImageFolder(root='dataset/dev/train', transform=data_transform['train'])
-    val_datasets   = ImageFolder(root='dataset/dev/val',   transform=data_transform['val'])
+    train_datasets = ImageFolder(root='dataset/train', transform=data_transform['train'])
+    val_datasets   = ImageFolder(root='dataset/val',   transform=data_transform['val'])
 
     # DataLoader作成
     train_dataloader = DataLoader(train_datasets, batch_size=batch_size, shuffle=True, num_workers=4)
     val_dataloader   = DataLoader(val_datasets,   batch_size=batch_size, shuffle=False, num_workers=4)
 
-    # confirm_data(train_dataloader, 4)
+    # confirm_data(val_dataloader, 4)
 
     # データサイズを取得
     in_c, h, w = train_datasets[0][0].shape
@@ -134,6 +143,7 @@ def objective(trial):
     model = Net(in_c, h, w, mid_c, out_c, hidden_units, out_units, dropout).to(device)
 
     optimizer = t.optim.SGD(model.parameters(), lr)
+    # optimizer = t.optim.Adam(model.parameters(), lr)
     early_stopping = EarlyStopping(PATIENCE, verbose=True, out_dir=out_dir, key='min')
 
     acc = 0
@@ -160,23 +170,26 @@ def objective(trial):
 
 if __name__ == "__main__":
 
+    slack = slackweb.Slack(url='https://hooks.slack.com/services/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')
     device = t.device('cuda' if t.cuda.is_available() else 'cpu')  # CUDA or CPU
     print('Device :', device)
 
     # Transforms
     data_transform = {
         'train': transforms.Compose([
-                 transforms.RandomResizedCrop(225, scale=(1.0, 1.0), ratio=(1.0, 1.0)),
+                 transforms.RandomResizedCrop(128, scale=(1.0, 1.0), ratio=(1.0, 1.0)),
                  transforms.RandomHorizontalFlip(),
                  transforms.ToTensor(),
                  transforms.Normalize([0.485, 0.456, 0.406],
                                       [0.229, 0.224, 0.225]),
+                 transforms.Grayscale(),
                  ]),
         'val': transforms.Compose([
-                 transforms.RandomResizedCrop(225, scale=(1.0, 1.0), ratio=(1.0, 1.0)),
+                 transforms.RandomResizedCrop(128, scale=(1.0, 1.0), ratio=(1.0, 1.0)),
                  transforms.ToTensor(),
                  transforms.Normalize([0.485, 0.456, 0.406],
                                       [0.229, 0.224, 0.225]),
+                 transforms.Grayscale(),
                  ]),
     }
 
@@ -195,3 +208,7 @@ if __name__ == "__main__":
 
     study_df = study.trials_dataframe()
     study_df.to_csv("result.csv")
+
+    slack.notify(text='Model training is complited.')
+    slack.notify(text=str(study.best_params))
+    slack.notify(text=str(study.best_value))
