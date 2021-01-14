@@ -12,6 +12,7 @@ gspread = "*"
 oauth2client = "*"
 pyzbar = "*"
 opencv-python = "*"
+slackweb = "*"
 
 [dev-packages]
 

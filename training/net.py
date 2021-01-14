@@ -15,18 +15,19 @@ class Net(nn.Module):
 
         h_out1, w_out1 = self.calc_cnn_shape(h, w, padding, dilation, KERNEL_SIZE, STRIDE)
         h_out2, w_out2 = self.calc_cnn_shape(h_out1, w_out1, padding, dilation, KERNEL_SIZE, STRIDE)
-        h_out3, w_out3 = self.calc_cnn_shape(h_out2, w_out2, padding, dilation, KERNEL_SIZE, STRIDE)
-        h_out4, w_out4 = self.calc_cnn_shape(h_out3, w_out3, padding, dilation, KERNEL_SIZE, STRIDE)
+        # h_out3, w_out3 = self.calc_cnn_shape(h_out2, w_out2, padding, dilation, KERNEL_SIZE, STRIDE)
+        # h_out4, w_out4 = self.calc_cnn_shape(h_out3, w_out3, padding, dilation, KERNEL_SIZE, STRIDE)
 
-        in_unit = out_c*h_out4*w_out4
+        # in_unit = out_c*h_out4*w_out4
+        in_unit = out_c*h_out2*w_out2
 
         self.conv = nn.Sequential(
-            nn.Conv2d(in_c, mid_c, kernel_size=KERNEL_SIZE, stride=STRIDE, padding=padding, dilation=dilation),
+            nn.Conv2d(in_c, out_c, kernel_size=KERNEL_SIZE, stride=STRIDE, padding=padding, dilation=dilation),
             nn.ReLU(),
             nn.MaxPool2d(kernel_size=KERNEL_SIZE, stride=STRIDE, padding=padding, dilation=dilation),
-            nn.Conv2d(mid_c, out_c, kernel_size=KERNEL_SIZE, stride=STRIDE, padding=padding, dilation=dilation),
-            nn.ReLU(),
-            nn.MaxPool2d(kernel_size=KERNEL_SIZE, stride=STRIDE, padding=padding, dilation=dilation)
+            # nn.Conv2d(mid_c, out_c, kernel_size=KERNEL_SIZE, stride=STRIDE, padding=padding, dilation=dilation),
+            # nn.ReLU(),
+            # nn.MaxPool2d(kernel_size=KERNEL_SIZE, stride=STRIDE, padding=padding, dilation=dilation)
         )
 
         self.dense = nn.Sequential(
