@@ -1,0 +1,12 @@
+{
+  "type": "service_account",
+  "project_id": "student-database-301105",
+  "private_key_id": "8ffc5f3cd97ef65ec1e57b7ab771462fcb0bea38",
+  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQCSsC6LOYhXwRhn\n/EJjtVExcVehMSyWNfF+sxRTCnmtoqlGtgS6Yr1e7KGtasab+vxPwJRga7oYW46V\nKWTgwyYFn4i6vuXAp2htVRo/7qYWnZfdw5w3FmbKX2sfKxjRzs3yDJ2BemHsywdH\nW43FgEV05LEGwRKUTsdv84nY4vOHC6TVoT2QS0Bs712n5L9pwn79X18jKPclnzOe\ndSe68PTsSVYNBTqri6gwjnEMxbXNsO+DKKAlwKCNJ3Hnc0yC8jmZpwNh8pHLauVK\nIiVuT01foaRbByd9Q/sA8HIBp4yJmBYw90VHxbEEYOiqMiIR1QBbpVF15/sriShI\nrctgk34jAgMBAAECggEAAUG8LFoyVlojrORm5zbK+sr3Try+nozYxFahcnKxBzFR\nFPeDQ9uLts/9NKCpEfYNClviiY7yubmzF4kSwbA6V6r9v2faTRPCG8myX2DakHAK\nOI6v/HLXL52wq8QxQr7sWcoM4WqcgyxcJBrfNJV8QtugvqeR0q54G/fwsuiC4KHQ\nFYqtMBxBW245Ks1+xtOwHm7JyFsH35ts1JO8QKePQQr2jCiGvEfwsXdOSuXpP5S0\ncATy43Al54/eySAW5J+TDoyUmYvKfuKahtiLaJavQ3mditDYeBeq/nblnWUQx9yY\nRldtVPemhsTfgYE8SQnm9xy8eHDQ0dH3y3ift1gBWQKBgQDJRlLzAdEjATaGp7VY\n9lzwxDOFomE6QiaUKq4mOKwhh7NGFM/+807S51q55v8yf2t8vmHeptXBcmrBMHT2\nThkGIfhkeOrH7LW8QDrhGYfpOIERXHG2SCLmBmOl4Q9K7QlPN1FA+ybxJUVAcpsb\ns7GqCUGPN0iLGczAo9AEAV2UqQKBgQC6kmDhG5xS6CbmfX1TnHIePVEjEZ7UE+QF\nWYgql44K9/pS70ioi3oqlgZ2FfQJzmgXBrV5DknGY48q52DOs2Gq3NWIvYopwtnm\n8/yUSOHm7fbZdznmaFug4uRMVhVTp1QhDHorVCad8SmqUxAq8cVqYDQTxiEHX5FE\nkNfEMfkv6wKBgQCal9IkZhPdQBRCTtQCVY/DOd+c18C3/5EkIrgKEWNciZ8Px/KO\nDxFO+nX77cm7XpUPhicj3Z6264vFgNOFTyz3QeZIPXuPPWfFBMx0kqiKYGT6Ebgh\nWry7UtL82KVnVjLdTk6xi3Y4p/jN7HjoSRe/00YwmzSz6ogSun+OZAIdqQKBgE/p\nuNNSxz9/roHVSGQSw5KOQv2ZY4WFS4q7EabkqXOrSa5STbXboCUzg2r69j9pCI6s\nUfibFSCDrmP7HS0MCo5r7o6WWOKQUlMpOIuvOAt4692zwrodAvpDlPPZf2MIbfGF\n7aI3dh76mBUbZPZv/lYVBNlfaPBGj+tlevXPTeOnAoGBAKQKwVuokR0Fz2wTfvJQ\nzAheJcAV/mFqefqbJBNoxgtG7BGXm3rjm53AX/bIEC0Ea8rHLC39VPqqIJzSanFs\n2Yb/bofPLHTgMDWNPFSYRpqNKsmhIRNsi5DOk5v+GOj41Fw24AKmL6o1w4TInSUZ\nATC8suqmb+N0QbvyYhcdebLO\n-----END PRIVATE KEY-----\n",
+  "client_email": "python-read-write@student-database-301105.iam.gserviceaccount.com",
+  "client_id": "111215608379630708024",
+  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+  "token_uri": "https://oauth2.googleapis.com/token",
+  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/python-read-write%40student-database-301105.iam.gserviceaccount.com"
+}
