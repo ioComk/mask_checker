@@ -70,10 +70,11 @@ def main():
 
     # 画像下処理
     transform = transforms.Compose([
-                transforms.RandomResizedCrop(256, scale=(1.0, 1.0), ratio=(1.0, 1.0)),
+                transforms.RandomResizedCrop(128, scale=(1.0, 1.0), ratio=(1.0, 1.0)),
                 transforms.ToTensor(),
                 transforms.Normalize([0.485, 0.456, 0.406],
                                      [0.229, 0.224, 0.225]),
+                transforms.Grayscale(),
                 ])
 
     cap = cv2.VideoCapture(DEVICE_ID)
@@ -201,13 +202,13 @@ if __name__ == "__main__":
     INTERVAL      = 33 
     CONFIDENCE    = 0.5
 
-    IN_C = 3
-    W = 256
-    H = 256
-    MID_C = 14
-    OUT_C = 32
-    HIDDEN_UNITS = 2929
-    OUT_UNITS = 228
+    IN_C = 1
+    W = 128
+    H = 128
+    MID_C = 18
+    OUT_C = 18
+    HIDDEN_UNITS = 3011
+    OUT_UNITS = 128
     # -------------------------------------------------------------------------------------------------
 
     today = datetime.now()
