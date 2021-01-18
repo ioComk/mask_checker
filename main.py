@@ -5,36 +5,9 @@ import torchvision.transforms as transforms
 from PIL import Image
 from pyzbar.pyzbar import decode
 import gspread
-import json
 from oauth2client.service_account import ServiceAccountCredentials 
 from training.net import Net
 from datetime import datetime
-
-'''
-    Doc:
-
-    # -------------------------------------
-    # OpenCV ------------------------------
-    # -------------------------------------
-
-    # 文字を表示
-    cv2.putText(c_frame, TEXT, (X, Y), cv.FONT_HERSHEY_PLAIN, FONT_SIZE, COLOR, THICKNESS, cv.LINE_AA)
-
-    # -------------------------------------
-    # スプレッドシート ---------------------
-    # -------------------------------------
-
-    # セルの値を受け取る
-    worksheet.acell('CELL').value
-
-    # 値をセットする
-    worksheet.update_cell(ROW, COL, VALUE)
-
-    # 列の値を全て受け取る
-    worksheet.col_values(1~)
-
-    # -------------------------------------
-'''
 
 def check_deplicated(id):
     row = 0
@@ -50,17 +23,18 @@ def check_deplicated(id):
 
     return row
 
-def write_ss(row, id):
+def write_ss(row, id, temp):
     # 値をセットする
     worksheet.update_cell(row, 1, today)
     worksheet.update_cell(row, 2, id)
+    worksheet.update_cell(row, 3, temp)
 
     dates.append(today)
     ids.append(id)
+    temps.append(temp)
 
 def main():
 
-    # device = t.device('cuda' if t.cuda.is_available() else 'cpu')
     device = 'cpu'
     
     # DNNモデル読み込み
@@ -83,29 +57,34 @@ def main():
     detector = cv2.dnn.readNetFromCaffe(PROTOTXT_PATH, WEIGHTS_PATH)
 
     # 初期フレームの読込
-    end_flag, c_frame = cap.read()
-    # height, width, channels = c_frame.shape
+    _, img = cap.read()
 
     # ウィンドウの準備
     cv2.namedWindow(WINDOW_NAME)
 
+    is_register = False
+
     # 変換処理ループ
-    while end_flag == True:
+    while cap.isOpened():
 
-        qr = decode(c_frame)
+        qr = decode(img)
 
-        cv2.rectangle(c_frame, (10, 10), (170, 50), BLACK, -1)
-        cv2.putText(c_frame, 'ID: ', (10, 40), cv2.FONT_HERSHEY_SIMPLEX, 1.0, WHITE, 2, cv2.LINE_AA)
+        temperature = 33.3
+        print(is_register)
+
+        cv2.rectangle(img, (10, 10), (170, 50), BLACK, -1)
+        cv2.putText(img, 'ID: ', (10, 40), cv2.FONT_HERSHEY_SIMPLEX, 1.0, WHITE, 2, cv2.LINE_AA)
 
         if qr:
             id = qr[0].data.decode('utf-8')
-            cv2.putText(c_frame, id, (60, 40), cv2.FONT_HERSHEY_SIMPLEX, 1.0, WHITE, 2, cv2.LINE_AA)
+            cv2.putText(img, id, (60, 40), cv2.FONT_HERSHEY_SIMPLEX, 1.0, WHITE, 2, cv2.LINE_AA)
             row = check_deplicated(id)
-            if row != 0:
-                write_ss(row, id)
-
-        # 画像の取得と顔の検出
-        img = c_frame
+            if row != 0 and is_register is True:
+                cv2.putText(img, 'Registering now...', (180, 40), cv2.FONT_HERSHEY_SIMPLEX, 1.0, RED, 2, cv2.LINE_AA)
+                write_ss(row, id, temperature)
+                is_register = False
+            if row == 0:
+                cv2.putText(img, 'Already registered.', (180, 40), cv2.FONT_HERSHEY_SIMPLEX, 1.0, RED, 2, cv2.LINE_AA)
 
         # 300x300に画像をリサイズ、画素値を調整
         (h, w) = img.shape[:2]
@@ -115,8 +94,8 @@ def main():
         detector.setInput(blob)
         detections = detector.forward()
 
-        # 検出結果の可視化
-        img_copy = img.copy()
+        margin_x = [0, 0]
+        margin_y = [0, 0]
 
         for i in range(0, detections.shape[2]):
             confidence = detections[0, 0, i, 2]
@@ -126,38 +105,40 @@ def main():
                 box = detections[0, 0, i, 3:7] * np.array([w, h, w, h])
                 (startX, startY, endX, endY) = box.astype('int')
 
-                margin_x = 0
-                margin_y = 0
 
-                face = img_copy[startY-margin_x:endY+margin_y, startX-margin_x:endX+margin_x]
+                face = img[startY-margin_y[0]:endY+margin_y[1], startX-margin_x[0]:endX+margin_x[1]]
 
                 predicted = 0
 
-                if face.shape[0]*face.shape[1]*face.shape[2] != 0:
+                if face.shape[0]*face.shape[1] != 0:
                 
                     face  = Image.fromarray(np.uint8(face))
                     face  = transform(face)
-
                     face  = face.view(1, face.shape[0], face.shape[1], face.shape[2])
+
                     output = model(face)
 
                     _, predicted = t.max(output.data, 1)
 
+                    # print(f'{output}, {predicted}')
+
                 if predicted == 1:
-                    cv2.rectangle(img_copy, (startX, startY), (endX, endY), RED, thickness=2)
+                    cv2.rectangle(img, (startX-margin_x[0], startY-margin_y[0]), (endX+margin_x[1], endY+margin_y[1]), RED, thickness=2)
                 else:
-                    cv2.rectangle(img_copy, (startX, startY), (endX, endY), GREEN, thickness=2)
+                    cv2.rectangle(img, (startX-margin_x[0], startY-margin_y[0]), (endX+margin_x[1], endY+margin_y[1]), GREEN, thickness=2)
 
         # フレーム表示
-        cv2.imshow(WINDOW_NAME, img_copy)
+        cv2.imshow(WINDOW_NAME, img)
 
         # Escキーで終了
         key = cv2.waitKey(INTERVAL)
         if key == ESC_KEY:
             break
+        elif key == Q_KEY:
+            is_register = True
 
         # 次のフレーム読み込み
-        end_flag, c_frame = cap.read()
+        _, img = cap.read()
 
     # 終了処理
     cv2.destroyAllWindows()
@@ -199,7 +180,8 @@ if __name__ == "__main__":
 
     DEVICE_ID     = 0
     ESC_KEY       = 27   
-    INTERVAL      = 33 
+    Q_KEY         = 113
+    INTERVAL      = 1 
     CONFIDENCE    = 0.5
 
     IN_C = 1
@@ -217,5 +199,6 @@ if __name__ == "__main__":
     # 日付とIDを取得
     dates = worksheet.col_values(1)
     ids  = worksheet.col_values(2)
+    temps = worksheet.col_values(3)
 
     main()
